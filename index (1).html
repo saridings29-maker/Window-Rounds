@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Window Rounds</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1976d2">
+<style>
+body { font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:10px; }
+h1 { font-size:22px; }
+select, input, textarea, button { width:100%; padding:10px; margin:6px 0; }
+button { background:#1976d2; color:#fff; border:none; border-radius:4px; }
+.card { background:#fff; padding:10px; border-radius:6px; margin-bottom:10px; }
+</style>
+</head>
+<body>
+
+<h1>Window Rounds</h1>
+
+<select id="round">
+<option>Bredbury</option>
+<option>Cheadle</option>
+<option>Wythenshawe</option>
+<option>Carling</option>
+<option>Haslington</option>
+<option>Sale</option>
+<option>Timperley 1</option>
+<option>Timperley 2</option>
+<option>Dunisher</option>
+<option>Day in sale</option>
+<option>Day in sale</option>
+<option>Man of leisure</option>
+</select>
+
+<div class="card">
+<input id="name" placeholder="Customer name">
+<textarea id="notes" placeholder="Notes"></textarea>
+<button onclick="save()">Save customer</button>
+</div>
+
+<div id="list"></div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+let data = JSON.parse(localStorage.getItem("customers") || "[]");
+
+function save() {
+  data.push({
+    round: round.value,
+    name: name.value,
+    notes: notes.value
+  });
+  localStorage.setItem("customers", JSON.stringify(data));
+  name.value = "";
+  notes.value = "";
+  render();
+}
+
+function render() {
+  list.innerHTML = data.map(d =>
+    `<div class="card"><b>${d.name}</b><br>${d.round}<br>${d.notes}</div>`
+  ).join("");
+}
+
+render();
+</script>
+
+</body>
+</html>
