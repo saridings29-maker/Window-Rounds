@@ -1,4 +1,3 @@
- 
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -52,4 +51,230 @@
   <h1>Window-Rounds</h1>
 
   <div class="card">
-    <div 
+    <div class="muted">Select round</div>
+    <select id="round"></select>
+
+    <div class="muted">Add customer</div>
+
+    <div class="grid">
+      <div>
+        <label class="muted">Customer name</label>
+        <input id="name" placeholder="Customer name" />
+      </div>
+
+      <div>
+        <label class="muted">Date</label>
+        <input id="date" type="date" />
+      </div>
+
+      <div>
+        <label class="muted">Price (£)</label>
+        <input id="price" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 12.50" />
+      </div>
+
+      <div>
+        <label class="muted">Paid</label>
+        <select id="paid">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+    </div>
+
+    <label class="muted">Notes</label>
+    <textarea id="notes" placeholder="Notes (gate code, dog, access etc.)"></textarea>
+
+    <button id="saveBtn">Save customer</button>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <div class="muted">Search</div>
+        <input id="search" placeholder="Search name / notes…" />
+      </div>
+      <div>
+        <div class="muted">Filter by round</div>
+        <select id="filter">
+          <option value="__ALL__">All rounds</option>
+        </select>
+      </div>
+      <div>
+        <div class="muted">Show</div>
+        <select id="showPaid">
+          <option value="__ALL__">All</option>
+          <option value="no">Unpaid only</option>
+          <option value="yes">Paid only</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card tableWrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Round</th>
+          <th>Date</th>
+          <th>Price</th>
+          <th>Paid</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // PWA SW
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+
+    const rounds = [
+      "Bredbury","Cheadle","Wythenshawe","Carling","Haslington","Sale",
+      "Timperley 1","Timperley 2","Dunisher","Day in sale","Day in sale","Man of leisure"
+    ];
+
+    const $ = (id) => document.getElementById(id);
+
+    // Populate round selects
+    rounds.forEach(r => {
+      const opt1 = document.createElement("option");
+      opt1.value = r; opt1.textContent = r;
+      $("round").appendChild(opt1);
+
+      const opt2 = document.createElement("option");
+      opt2.value = r; opt2.textContent = r;
+      $("filter").appendChild(opt2);
+    });
+
+    // Load existing data (backwards-compatible)
+    let data = JSON.parse(localStorage.getItem("customers") || "[]");
+
+    function saveData() {
+      localStorage.setItem("customers", JSON.stringify(data));
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/[&<>"']/g, m => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[m]));
+    }
+
+    function formatDate(d) {
+      if (!d) return "";
+      // Expecting YYYY-MM-DD
+      return d;
+    }
+
+    function formatMoney(n) {
+      if (n === "" || n === null || n === undefined) return "";
+      const num = Number(n);
+      if (Number.isNaN(num)) return "";
+      return "£" + num.toFixed(2);
+    }
+
+    function addCustomer() {
+      const round = $("round").value;
+      const name = $("name").value.trim();
+      const date = $("date").value; // YYYY-MM-DD
+      const price = $("price").value;
+      const paid = $("paid").value; // yes/no
+      const notes = $("notes").value.trim();
+
+      if (!name) { alert("Please enter a customer name"); return; }
+
+      data.push({
+        id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()),
+        round,
+        name,
+        date: date || "",
+        price: price === "" ? "" : Number(price),
+        paid: paid || "no",
+        notes: notes || "",
+        createdAt: Date.now()
+      });
+
+      saveData();
+      $("name").value = "";
+      $("date").value = "";
+      $("price").value = "";
+      $("paid").value = "no";
+      $("notes").value = "";
+      render();
+    }
+
+    function togglePaid(id) {
+      const i = data.findIndex(x => x.id === id);
+      if (i === -1) return;
+      data[i].paid = (data[i].paid === "yes") ? "no" : "yes";
+      saveData();
+      render();
+    }
+
+    function removeCustomer(id) {
+      if (!confirm("Delete this customer?")) return;
+      data = data.filter(x => x.id !== id);
+      saveData();
+      render();
+    }
+
+    function render() {
+      const q = $("search").value.trim().toLowerCase();
+      const f = $("filter").value;
+      const paidFilter = $("showPaid").value;
+
+      // map old records safely (if you created customers before these fields existed)
+      const safe = data.map(d => ({
+        ...d,
+        date: d.date || "",
+        price: (d.price === undefined ? "" : d.price),
+        paid: d.paid || "no",
+        notes: d.notes || ""
+      }));
+
+      const filtered = safe
+        .filter(d => (f === "__ALL__" ? true : d.round === f))
+        .filter(d => (paidFilter === "__ALL__" ? true : d.paid === paidFilter))
+        .filter(d => {
+          if (!q) return true;
+          return (d.name || "").toLowerCase().includes(q) || (d.notes || "").toLowerCase().includes(q);
+        })
+        .sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+
+      $("tbody").innerHTML = filtered.map(d => {
+        const paidText = d.paid === "yes" ? "Paid" : "Unpaid";
+        const paidClass = d.paid === "yes" ? "paidYes" : "paidNo";
+        return `
+          <tr>
+            <td><b>${escapeHtml(d.name)}</b></td>
+            <td><span class="pill">${escapeHtml(d.round)}</span></td>
+            <td>${escapeHtml(formatDate(d.date))}</td>
+            <td>${escapeHtml(formatMoney(d.price))}</td>
+            <td class="paid ${paidClass}">${paidText}</td>
+            <td><small>${escapeHtml(d.notes)}</small></td>
+            <td class="actions">
+              <button class="btnGhost" onclick="togglePaid('${d.id}')">Toggle paid</button>
+              <button class="btnDanger" onclick="removeCustomer('${d.id}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join("") || `<tr><td colspan="7" class="muted">No customers yet. Add your first one above.</td></tr>`;
+    }
+
+    $("saveBtn").addEventListener("click", addCustomer);
+    $("search").addEventListener("input", render);
+    $("filter").addEventListener("change", render);
+    $("showPaid").addEventListener("change", render);
+
+    // expose functions for buttons
+    window.togglePaid = togglePaid;
+    window.removeCustomer = removeCustomer;
+
+    render();
+  </script>
+</body>
+</html> 
