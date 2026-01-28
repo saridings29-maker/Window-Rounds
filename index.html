@@ -3,278 +3,1025 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Window-Rounds</title>
+  <title>Window Rounds</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1976d2">
+
   <style>
-    body { font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:12px; }
-    h1 { font-size:28px; margin:10px 0 12px; }
+    :root{
+      --bg:#f5f5f5;
+      --card:#fff;
+      --border:#e6e6e6;
+      --text:#111;
+      --muted:#666;
+      --blue:#1976d2;
+      --danger:#b42318;
+      --ok:#1b7f3a;
 
-    .card { background:#fff; padding:12px; border-radius:10px; margin:10px 0; }
-    .muted { color:#666; font-size:14px; }
+      --col-name: 260px;
+      --col-price: 96px;
 
-    select, input, textarea, button {
-      width:100%; padding:12px; margin:8px 0; border-radius:8px;
-      border:1px solid #ddd; box-sizing:border-box; font-size:16px;
+      --cycle-highlight-bg: #fff8e1;
+      --cycle-highlight-border: #ffe08a;
+    }
+
+    body { font-family: Arial, sans-serif; background:var(--bg); margin:0; color:var(--text); }
+    header { position: sticky; top:0; background:var(--card); border-bottom:1px solid var(--border); padding:12px; z-index:10; }
+    h1 { margin:0 0 10px; font-size:20px; }
+
+    .controls { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+    .controls > .group { flex:1; min-width: 180px; }
+    label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+
+    select,input,button,textarea{
+      font:inherit;
+      width:100%;
+      padding:10px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#fff;
+      box-sizing:border-box;
+    }
+    button{
+      background:var(--blue);
+      color:#fff;
+      border:none;
+      font-weight:700;
+      cursor:pointer;
+    }
+    button.secondary{
+      background:#e9eefc;
+      color:#123;
+      border:1px solid #d7e2ff;
+    }
+    button.danger{ background:var(--danger); }
+
+    main { padding:12px; max-width: 1200px; margin:0 auto; }
+    .muted { color:var(--muted); font-size:12px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; }
+    .row > * { flex:1; min-width: 200px; }
+
+    .tableWrap{
+      margin-top:12px;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .scrollX{
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table{
+      border-collapse:collapse;
+      width:100%;
+      min-width: calc(var(--col-name) + var(--col-price) + 13 * 110px);
+    }
+    th,td{
+      border-bottom:1px solid #eee;
+      padding:10px;
+      vertical-align:top;
       background:#fff;
     }
-    textarea { min-height:70px; }
-    button { background:#1976d2; color:#fff; border:none; font-weight:700; }
-
-    .grid {
-      display:grid;
-      grid-template-columns: 1fr 160px 140px 120px;
-      gap:10px;
-    }
-    @media (max-width: 720px) {
-      .grid { grid-template-columns: 1fr 1fr; }
+    th{
+      font-size:12px;
+      color:#444;
+      background:#fafafa;
+      position: sticky;
+      top: 0;
+      z-index: 3;
     }
 
-    .tableWrap { overflow:auto; border-radius:10px; }
-    table { width:100%; border-collapse:collapse; min-width:780px; background:#fff; }
-    th, td { padding:10px; border-bottom:1px solid #eee; text-align:left; vertical-align:top; }
-    th { position:sticky; top:0; background:#fafafa; z-index:1; font-size:13px; color:#444; }
-    td small { color:#666; }
-    .pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#eef3ff; color:#1a3f9b; font-size:12px; }
-    .paid { font-weight:700; }
-    .paidYes { color:#1b7f3a; }
-    .paidNo { color:#b42318; }
-    .actions button { width:auto; padding:8px 10px; margin:0; border-radius:8px; font-size:14px; }
-    .btnGhost { background:#e9eefc; color:#123; }
-    .btnDanger { background:#b42318; }
+    .stickyName{
+      position: sticky;
+      left: 0;
+      width: var(--col-name);
+      min-width: var(--col-name);
+      max-width: var(--col-name);
+      z-index: 4;
+      background:#fff;
+      border-right:1px solid #f0f0f0;
+    }
+    .stickyPrice{
+      position: sticky;
+      left: var(--col-name);
+      width: var(--col-price);
+      min-width: var(--col-price);
+      max-width: var(--col-price);
+      z-index: 4;
+      background:#fff;
+      border-right:1px solid #f0f0f0;
+      text-align:center;
+      white-space:nowrap;
+    }
+    th.stickyName, th.stickyPrice{
+      z-index: 6;
+      background:#fafafa;
+    }
 
-    .row { display:flex; gap:10px; flex-wrap:wrap; }
-    .row > div { flex:1; min-width:220px; }
+    .nameLine{ font-weight:800; font-size:14px; margin:0; }
+    .addrLine{ margin-top:3px; color:var(--muted); font-size:12px; white-space:pre-wrap; }
+    .tapHint{ margin-top:6px; font-size:11px; color:var(--muted); }
+
+    .priceBox{
+      display:inline-block;
+      padding:6px 8px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#fff;
+      font-weight:800;
+      min-width: 70px;
+    }
+
+    .cycleHead{ font-size:11px; color:#444; white-space:nowrap; }
+    .cycleSub{ font-size:10px; color:var(--muted); white-space:nowrap; margin-top:2px; }
+
+    .cell{
+      user-select:none;
+      border:1px solid #ececec;
+      border-radius:12px;
+      padding:8px;
+      min-width: 92px;
+      text-align:center;
+      cursor:pointer;
+      background:#fff;
+    }
+    .paidYes{
+      border-color:#bfe9c9;
+      background:#eefcf1;
+      color:var(--ok);
+      font-weight:800;
+    }
+    .paidNo{
+      border-color:#ffd0d0;
+      background:#fff2f2;
+      color:var(--danger);
+      font-weight:800;
+    }
+    .cellNote{
+      margin-top:6px;
+      font-size:10px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    /* Highlight current cycle column */
+    .currentCycleHead{
+      background: var(--cycle-highlight-bg) !important;
+      box-shadow: inset 0 -2px 0 var(--cycle-highlight-border);
+    }
+    td.currentCycleCol{
+      background: var(--cycle-highlight-bg);
+    }
+    td.currentCycleCol .cell{
+      border-color: var(--cycle-highlight-border);
+    }
+
+    .smallBtnRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+    .smallBtnRow button{ flex:1; min-width: 160px; }
+
+    .kpi{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 10px; border-radius:999px; font-size:12px;
+      border:1px solid var(--border); background:#fafafa;
+      white-space:nowrap;
+    }
+    .pill b{ font-size:13px; }
+
+    /* Reorder buttons */
+    .reorderRow{
+      margin-top:8px;
+      display:none;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .reorderRow button{
+      width:auto;
+      padding:8px 10px;
+      border-radius:10px;
+      font-size:12px;
+      background:#f2f5ff;
+      color:#123;
+      border:1px solid #d7e2ff;
+    }
+    .reorderMode .reorderRow{ display:flex; }
+    .reorderMode .tapHint{ display:none; }
+
+    /* Modal */
+    .modalBg{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      z-index:50;
+    }
+    .modal{
+      width:min(520px, 100%);
+      background:#fff;
+      border-radius:16px;
+      border:1px solid var(--border);
+      padding:14px;
+    }
+    .modal h2{ margin:0 0 8px; font-size:16px; }
+    .modal .actions{ display:flex; gap:10px; margin-top:10px; }
+    .modal .actions button{ flex:1; }
   </style>
 </head>
+
 <body>
-  <h1>Window-Rounds</h1>
+<header>
+  <h1>Window Rounds – Round Book</h1>
 
-  <div class="card">
-    <div class="muted">Select round</div>
-    <select id="round"></select>
-
-    <div class="muted">Add customer</div>
-
-    <div class="grid">
-      <div>
-        <label class="muted">Customer name</label>
-        <input id="name" placeholder="Customer name" />
-      </div>
-
-      <div>
-        <label class="muted">Date</label>
-        <input id="date" type="date" />
-      </div>
-
-      <div>
-        <label class="muted">Price (£)</label>
-        <input id="price" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 12.50" />
-      </div>
-
-      <div>
-        <label class="muted">Paid</label>
-        <select id="paid">
-          <option value="no">No</option>
-          <option value="yes">Yes</option>
-        </select>
-      </div>
+  <div class="controls">
+    <div class="group">
+      <label>Area (Round)</label>
+      <select id="roundSelect"></select>
     </div>
 
-    <label class="muted">Notes</label>
-    <textarea id="notes" placeholder="Notes (gate code, dog, access etc.)"></textarea>
+    <div class="group">
+      <label>Year</label>
+      <select id="yearSelect"></select>
+    </div>
 
-    <button id="saveBtn">Save customer</button>
-  </div>
+    <div class="group">
+      <label>4-weekly cycle start date (for the year)</label>
+      <input id="yearStart" type="date">
+      <div class="muted">This controls the 13 column dates + “today’s cycle” highlight.</div>
+    </div>
 
-  <div class="card">
-    <div class="row">
-      <div>
-        <div class="muted">Search</div>
-        <input id="search" placeholder="Search name / notes…" />
-      </div>
-      <div>
-        <div class="muted">Filter by round</div>
-        <select id="filter">
-          <option value="__ALL__">All rounds</option>
-        </select>
-      </div>
-      <div>
-        <div class="muted">Show</div>
-        <select id="showPaid">
-          <option value="__ALL__">All</option>
-          <option value="no">Unpaid only</option>
-          <option value="yes">Paid only</option>
-        </select>
-      </div>
+    <div class="group">
+      <label>Search (name/address/notes)</label>
+      <input id="search" placeholder="Search…">
+    </div>
+
+    <div class="group">
+      <label>&nbsp;</label>
+      <button id="addCustomerBtn">+ Add customer</button>
     </div>
   </div>
 
-  <div class="card tableWrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Customer</th>
-          <th>Round</th>
-          <th>Date</th>
-          <th>Price</th>
-          <th>Paid</th>
-          <th>Notes</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
+  <div class="smallBtnRow">
+    <button class="secondary" id="toggleReorderBtn">Reorder customers</button>
+    <button class="secondary" id="unpaidOnlyBtn">Show unpaid only</button>
+    <button class="secondary" id="showAllBtn">Show all</button>
+    <button class="secondary" id="backupDriveBtn">Backup to Drive</button>
+    <button class="secondary" id="exportBtn">Export backup</button>
+    <button class="secondary" id="importBtn">Import backup</button>
+    <input id="importFile" type="file" accept="application/json" style="display:none;">
   </div>
 
-  <script>
-    // PWA SW
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
+  <div class="kpi" id="kpis"></div>
+</header>
+
+<main>
+  <div class="tableWrap">
+    <div class="scrollX">
+      <table>
+        <thead>
+          <tr id="theadRow"></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="muted" style="margin-top:10px;">
+    Tap a cell to toggle Paid/Unpaid. Long-press a cell to add note/method/date paid. Tap name/address or price to edit.
+  </div>
+</main>
+
+<!-- Customer modal -->
+<div class="modalBg" id="custModalBg">
+  <div class="modal">
+    <h2 id="custModalTitle">Add customer</h2>
+
+    <label>Name</label>
+    <input id="custName">
+
+    <label>Address</label>
+    <textarea id="custAddress" placeholder="House no, street, postcode"></textarea>
+
+    <label>Price (£)</label>
+    <input id="custPrice" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 12.50">
+
+    <label>Notes (optional)</label>
+    <textarea id="custNotes" placeholder="Gate code, dog, access, payment notes…"></textarea>
+
+    <div class="actions">
+      <button class="secondary" id="custCancelBtn" type="button">Cancel</button>
+      <button id="custSaveBtn" type="button">Save</button>
+    </div>
+
+    <div style="margin-top:10px;">
+      <button class="danger" id="custDeleteBtn" type="button" style="display:none;">Delete customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cell modal -->
+<div class="modalBg" id="cellModalBg">
+  <div class="modal">
+    <h2 id="cellModalTitle">Cell details</h2>
+
+    <div class="muted" id="cellModalMeta"></div>
+
+    <label>Paid status</label>
+    <select id="cellPaid">
+      <option value="no">Unpaid</option>
+      <option value="yes">Paid</option>
+    </select>
+
+    <label>Date paid (optional)</label>
+    <input id="cellPaidDate" type="date">
+
+    <label>Payment method (optional)</label>
+    <input id="cellMethod" placeholder="cash / bank / card…">
+
+    <label>Note (optional)</label>
+    <textarea id="cellNote" placeholder="Anything to remember for this visit…"></textarea>
+
+    <div class="actions">
+      <button class="secondary" id="cellCancelBtn" type="button">Cancel</button>
+      <button id="cellSaveBtn" type="button">Save</button>
+    </div>
+
+    <div style="margin-top:10px;">
+      <button class="danger" id="cellClearBtn" type="button">Clear cell</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // PWA SW
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+
+  const KEY = "wr_roundbook_v2";
+
+  const DEFAULT_ROUNDS = [
+    "Bredbury","Cheadle","Wythenshawe","Carling","Haslington","Sale",
+    "Timperley 1","Timperley 2","Dunisher","Day in sale","Day in sale","Man of leisure"
+  ];
+
+  const $ = (id) => document.getElementById(id);
+
+  function todayISO() {
+    const d = new Date(); d.setHours(0,0,0,0);
+    return d.toISOString().slice(0,10);
+  }
+  function addDaysISO(iso, days) {
+    const d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() + Number(days));
+    d.setHours(0,0,0,0);
+    return d.toISOString().slice(0,10);
+  }
+  function daysBetweenISO(a, b){
+    const da = new Date(a + "T00:00:00");
+    const db = new Date(b + "T00:00:00");
+    return Math.floor((db - da) / (1000*60*60*24));
+  }
+  function money(v){
+    const n = Number(v);
+    if (!isFinite(n)) return "";
+    return "£" + n.toFixed(2);
+  }
+  function uid(){
+    return (crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(16).slice(2) + Date.now().toString(16)));
+  }
+  function escapeHTML(str){
+    return String(str ?? "").replace(/[&<>"']/g, s => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+    }[s]));
+  }
+
+  let state = loadState();
+  let showUnpaidOnly = false;
+  let reorderMode = false;
+
+  let editingCustomerId = null;
+  let editingCell = null; // {customerId, year, cycleIndex}
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(!raw){
+        const y = new Date().getFullYear();
+        const start = `${y}-01-01`;
+        return {
+          rounds: DEFAULT_ROUNDS.slice(),
+          selectedRound: DEFAULT_ROUNDS[0],
+          year: y,
+          yearStarts: { [y]: start },
+          customers: [],      // {id, round, name, address, price, notes, order}
+          cells: {},          // key: customerId|year|cycle -> {paid, paidDate, method, note}
+          __migrated: false
+        };
+      }
+      const obj = JSON.parse(raw);
+
+      if(!obj.__migrated){
+        // pull older simple list if present
+        try{
+          const old = JSON.parse(localStorage.getItem("customers") || "null");
+          if(Array.isArray(old) && old.length && (!obj.customers || !obj.customers.length)){
+            obj.customers = old.map((c, idx) => ({
+              id: c.id || uid(),
+              round: c.round || (obj.rounds?.[0] || DEFAULT_ROUNDS[0]),
+              name: c.name || "Unnamed",
+              address: c.address || "",
+              price: (c.price === "" || c.price === undefined) ? "" : c.price,
+              notes: c.notes || "",
+              order: idx
+            }));
+          }
+        }catch{}
+        obj.__migrated = true;
+      }
+
+      if(!Array.isArray(obj.rounds)) obj.rounds = DEFAULT_ROUNDS.slice();
+      if(!obj.selectedRound) obj.selectedRound = obj.rounds[0] || DEFAULT_ROUNDS[0];
+      if(!obj.year) obj.year = new Date().getFullYear();
+      if(!obj.yearStarts) obj.yearStarts = {};
+      if(!obj.yearStarts[obj.year]) obj.yearStarts[obj.year] = `${obj.year}-01-01`;
+      if(!Array.isArray(obj.customers)) obj.customers = [];
+      if(!obj.cells || typeof obj.cells !== "object") obj.cells = {};
+
+      // ensure order exists per round
+      let perRound = {};
+      for(const c of obj.customers){
+        if(c.order === undefined || c.order === null) c.order = 0;
+        perRound[c.round] = perRound[c.round] || 0;
+        perRound[c.round] += 1;
+      }
+
+      return obj;
+    }catch(e){
+      const y = new Date().getFullYear();
+      return {
+        rounds: DEFAULT_ROUNDS.slice(),
+        selectedRound: DEFAULT_ROUNDS[0],
+        year: y,
+        yearStarts: { [y]: `${y}-01-01` },
+        customers: [],
+        cells: {},
+        __migrated: true
+      };
     }
+  }
 
-    const rounds = [
-      "Bredbury","Cheadle","Wythenshawe","Carling","Haslington","Sale",
-      "Timperley 1","Timperley 2","Dunisher","Day in sale","Day in sale","Man of leisure"
-    ];
+  function saveState(){
+    localStorage.setItem(KEY, JSON.stringify(state));
+  }
 
-    const $ = (id) => document.getElementById(id);
+  function currentYear(){
+    return Number($("yearSelect").value || state.year);
+  }
+  function currentRound(){
+    return $("roundSelect").value || state.selectedRound;
+  }
+  function getYearStart(year){
+    const k = String(year);
+    if(!state.yearStarts[k]) state.yearStarts[k] = `${year}-01-01`;
+    return state.yearStarts[k];
+  }
+  function setYearStart(year, iso){
+    state.yearStarts[String(year)] = iso;
+    saveState();
+  }
+  function cycleDates(year){
+    const start = getYearStart(year);
+    const dates = [];
+    for(let i=0;i<13;i++) dates.push(addDaysISO(start, i*28));
+    return dates;
+  }
+  function currentCycleIndex(year){
+    const start = getYearStart(year);
+    const t = todayISO();
+    const diff = daysBetweenISO(start, t);
+    const idx = Math.floor(diff / 28);
+    if(idx < 0) return -1;
+    if(idx > 12) return -1;
+    return idx;
+  }
+  function cellKey(customerId, year, cycleIndex){
+    return `${customerId}|${year}|${cycleIndex}`;
+  }
+  function getCell(customerId, year, cycleIndex){
+    const k = cellKey(customerId, year, cycleIndex);
+    return state.cells[k] || { paid: "no", paidDate: "", method: "", note: "" };
+  }
+  function setCell(customerId, year, cycleIndex, value){
+    const k = cellKey(customerId, year, cycleIndex);
+    state.cells[k] = value;
+    saveState();
+  }
+  function clearCell(customerId, year, cycleIndex){
+    const k = cellKey(customerId, year, cycleIndex);
+    delete state.cells[k];
+    saveState();
+  }
 
-    // Populate round selects
-    rounds.forEach(r => {
-      const opt1 = document.createElement("option");
-      opt1.value = r; opt1.textContent = r;
-      $("round").appendChild(opt1);
+  function init(){
+    $("roundSelect").innerHTML = state.rounds.map(r => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join("");
+    $("roundSelect").value = state.selectedRound;
 
-      const opt2 = document.createElement("option");
-      opt2.value = r; opt2.textContent = r;
-      $("filter").appendChild(opt2);
+    const nowY = new Date().getFullYear();
+    const years = [];
+    for(let y = nowY - 1; y <= nowY + 2; y++) years.push(y);
+    $("yearSelect").innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join("");
+    $("yearSelect").value = String(state.year);
+
+    $("yearStart").value = getYearStart(currentYear());
+
+    wireEvents();
+    render();
+  }
+
+  function wireEvents(){
+    $("roundSelect").addEventListener("change", () => {
+      state.selectedRound = currentRound();
+      saveState();
+      render();
     });
 
-    // Load existing data (backwards-compatible)
-    let data = JSON.parse(localStorage.getItem("customers") || "[]");
-
-    function saveData() {
-      localStorage.setItem("customers", JSON.stringify(data));
-    }
-
-    function escapeHtml(s) {
-      return String(s ?? "").replace(/[&<>"']/g, m => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[m]));
-    }
-
-    function formatDate(d) {
-      if (!d) return "";
-      // Expecting YYYY-MM-DD
-      return d;
-    }
-
-    function formatMoney(n) {
-      if (n === "" || n === null || n === undefined) return "";
-      const num = Number(n);
-      if (Number.isNaN(num)) return "";
-      return "£" + num.toFixed(2);
-    }
-
-    function addCustomer() {
-      const round = $("round").value;
-      const name = $("name").value.trim();
-      const date = $("date").value; // YYYY-MM-DD
-      const price = $("price").value;
-      const paid = $("paid").value; // yes/no
-      const notes = $("notes").value.trim();
-
-      if (!name) { alert("Please enter a customer name"); return; }
-
-      data.push({
-        id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()),
-        round,
-        name,
-        date: date || "",
-        price: price === "" ? "" : Number(price),
-        paid: paid || "no",
-        notes: notes || "",
-        createdAt: Date.now()
-      });
-
-      saveData();
-      $("name").value = "";
-      $("date").value = "";
-      $("price").value = "";
-      $("paid").value = "no";
-      $("notes").value = "";
+    $("yearSelect").addEventListener("change", () => {
+      state.year = currentYear();
+      saveState();
+      $("yearStart").value = getYearStart(currentYear());
       render();
-    }
+    });
 
-    function togglePaid(id) {
-      const i = data.findIndex(x => x.id === id);
-      if (i === -1) return;
-      data[i].paid = (data[i].paid === "yes") ? "no" : "yes";
-      saveData();
+    $("yearStart").addEventListener("change", () => {
+      const y = currentYear();
+      const iso = $("yearStart").value || `${y}-01-01`;
+      setYearStart(y, iso);
       render();
-    }
+    });
 
-    function removeCustomer(id) {
-      if (!confirm("Delete this customer?")) return;
-      data = data.filter(x => x.id !== id);
-      saveData();
-      render();
-    }
-
-    function render() {
-      const q = $("search").value.trim().toLowerCase();
-      const f = $("filter").value;
-      const paidFilter = $("showPaid").value;
-
-      // map old records safely (if you created customers before these fields existed)
-      const safe = data.map(d => ({
-        ...d,
-        date: d.date || "",
-        price: (d.price === undefined ? "" : d.price),
-        paid: d.paid || "no",
-        notes: d.notes || ""
-      }));
-
-      const filtered = safe
-        .filter(d => (f === "__ALL__" ? true : d.round === f))
-        .filter(d => (paidFilter === "__ALL__" ? true : d.paid === paidFilter))
-        .filter(d => {
-          if (!q) return true;
-          return (d.name || "").toLowerCase().includes(q) || (d.notes || "").toLowerCase().includes(q);
-        })
-        .sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
-
-      $("tbody").innerHTML = filtered.map(d => {
-        const paidText = d.paid === "yes" ? "Paid" : "Unpaid";
-        const paidClass = d.paid === "yes" ? "paidYes" : "paidNo";
-        return `
-          <tr>
-            <td><b>${escapeHtml(d.name)}</b></td>
-            <td><span class="pill">${escapeHtml(d.round)}</span></td>
-            <td>${escapeHtml(formatDate(d.date))}</td>
-            <td>${escapeHtml(formatMoney(d.price))}</td>
-            <td class="paid ${paidClass}">${paidText}</td>
-            <td><small>${escapeHtml(d.notes)}</small></td>
-            <td class="actions">
-              <button class="btnGhost" onclick="togglePaid('${d.id}')">Toggle paid</button>
-              <button class="btnDanger" onclick="removeCustomer('${d.id}')">Delete</button>
-            </td>
-          </tr>
-        `;
-      }).join("") || `<tr><td colspan="7" class="muted">No customers yet. Add your first one above.</td></tr>`;
-    }
-
-    $("saveBtn").addEventListener("click", addCustomer);
     $("search").addEventListener("input", render);
-    $("filter").addEventListener("change", render);
-    $("showPaid").addEventListener("change", render);
+    $("addCustomerBtn").addEventListener("click", () => openCustomerModal(null));
 
-    // expose functions for buttons
-    window.togglePaid = togglePaid;
-    window.removeCustomer = removeCustomer;
+    $("unpaidOnlyBtn").addEventListener("click", () => { showUnpaidOnly = true; render(); });
+    $("showAllBtn").addEventListener("click", () => { showUnpaidOnly = false; render(); });
 
+    $("toggleReorderBtn").addEventListener("click", () => {
+      reorderMode = !reorderMode;
+      $("toggleReorderBtn").textContent = reorderMode ? "Done reordering" : "Reorder customers";
+      render();
+    });
+
+    $("exportBtn").addEventListener("click", exportBackupDownload);
+    $("backupDriveBtn").addEventListener("click", backupToDriveShare);
+    $("importBtn").addEventListener("click", () => $("importFile").click());
+    $("importFile").addEventListener("change", importBackup);
+
+    $("custCancelBtn").addEventListener("click", closeCustomerModal);
+    $("custSaveBtn").addEventListener("click", saveCustomerFromModal);
+    $("custDeleteBtn").addEventListener("click", deleteCustomerFromModal);
+
+    $("cellCancelBtn").addEventListener("click", closeCellModal);
+    $("cellSaveBtn").addEventListener("click", saveCellFromModal);
+    $("cellClearBtn").addEventListener("click", clearCellFromModal);
+
+    $("custModalBg").addEventListener("click", (e) => { if(e.target === $("custModalBg")) closeCustomerModal(); });
+    $("cellModalBg").addEventListener("click", (e) => { if(e.target === $("cellModalBg")) closeCellModal(); });
+  }
+
+  function render(){
+    const year = currentYear();
+    const round = currentRound();
+    const q = $("search").value.trim().toLowerCase();
+
+    $("yearStart").value = getYearStart(year);
+
+    const dates = cycleDates(year);
+    const curIdx = currentCycleIndex(year);
+
+    // Header row
+    const headCells = [];
+    headCells.push(`<th class="stickyName">Customer / Address</th>`);
+    headCells.push(`<th class="stickyPrice">Price</th>`);
+    for(let i=0;i<13;i++){
+      const cls = (i === curIdx) ? "currentCycleHead" : "";
+      headCells.push(`<th class="${cls}"><div class="cycleHead">${dates[i]}</div><div class="cycleSub">Cycle ${i+1}</div></th>`);
+    }
+    $("theadRow").innerHTML = headCells.join("");
+
+    // Filter customers (and sort by saved order)
+    let customers = state.customers
+      .filter(c => c.round === round)
+      .sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
+
+    if(q){
+      customers = customers.filter(c => {
+        const blob = `${c.name||""} ${c.address||""} ${c.notes||""}`.toLowerCase();
+        return blob.includes(q);
+      });
+    }
+
+    if(showUnpaidOnly){
+      customers = customers.filter(c => {
+        for(let i=0;i<13;i++){
+          const cell = getCell(c.id, year, i);
+          if((cell.paid || "no") !== "yes") return true;
+        }
+        return false;
+      });
+    }
+
+    // KPIs (Area totals for CURRENT cycle)
+    let due = 0, paid = 0;
+    if(curIdx >= 0){
+      for(const c of customers){
+        const price = Number(c.price);
+        if(!isFinite(price)) continue;
+        due += price;
+
+        const cell = getCell(c.id, year, curIdx);
+        if((cell.paid || "no") === "yes") paid += price;
+      }
+    }
+    const outstanding = due - paid;
+
+    const cycleLabel = (curIdx >= 0) ? `Cycle ${curIdx+1} (${dates[curIdx]})` : "Today not in year range";
+    $("kpis").innerHTML = `
+      <span class="pill">Round: <b>${escapeHTML(round)}</b></span>
+      <span class="pill">Year: <b>${year}</b></span>
+      <span class="pill">Today’s cycle: <b>${escapeHTML(cycleLabel)}</b></span>
+      <span class="pill">Customers shown: <b>${customers.length}</b></span>
+      <span class="pill">Total due (this cycle): <b>${money(due)}</b></span>
+      <span class="pill">Total paid (this cycle): <b>${money(paid)}</b></span>
+      <span class="pill">Outstanding: <b>${money(outstanding)}</b></span>
+      ${showUnpaidOnly ? `<span class="pill" style="border-color:#ffd0d0;background:#fff2f2;">Unpaid filter ON</span>` : ``}
+      ${reorderMode ? `<span class="pill" style="border-color:#d7e2ff;background:#e9eefc;">Reorder mode ON</span>` : ``}
+    `;
+
+    // Body rows
+    const rows = customers.map((c, idx) => {
+      const nameTd = `
+        <td class="stickyName" data-action="editCustomer" data-id="${c.id}">
+          <div class="nameLine">${escapeHTML(c.name || "Unnamed")}</div>
+          <div class="addrLine">${escapeHTML(c.address || "")}</div>
+          ${c.notes ? `<div class="tapHint">📝 ${escapeHTML(c.notes)}</div>` : `<div class="tapHint">Tap to edit</div>`}
+
+          <div class="reorderRow">
+            <button type="button" data-action="moveUp" data-id="${c.id}">↑ Up</button>
+            <button type="button" data-action="moveDown" data-id="${c.id}">↓ Down</button>
+          </div>
+        </td>
+      `;
+
+      const priceTd = `
+        <td class="stickyPrice" data-action="editPrice" data-id="${c.id}">
+          <span class="priceBox">${(c.price !== "" && c.price !== null && c.price !== undefined && isFinite(Number(c.price))) ? escapeHTML(money(c.price)) : "£—"}</span>
+          <div class="tapHint">tap</div>
+        </td>
+      `;
+
+      const cellsTd = [];
+      for(let i=0;i<13;i++){
+        const cell = getCell(c.id, year, i);
+        const isPaid = (cell.paid || "no") === "yes";
+        const cls = isPaid ? "cell paidYes" : "cell paidNo";
+        const label = isPaid ? "PAID" : "UNPAID";
+        const notePreview = (cell.note || cell.method || cell.paidDate) ? (cell.note || cell.method || cell.paidDate) : "";
+        const tdCls = (i === curIdx) ? "currentCycleCol" : "";
+        cellsTd.push(`
+          <td class="${tdCls}">
+            <div class="${cls}"
+                 data-action="togglePaid"
+                 data-id="${c.id}"
+                 data-cycle="${i}"
+                 title="Tap to toggle. Long-press for details.">
+              ${label}
+              ${notePreview ? `<div class="cellNote">${escapeHTML(notePreview)}</div>` : ``}
+            </div>
+          </td>
+        `);
+      }
+
+      const trClass = reorderMode ? "reorderMode" : "";
+      return `<tr class="${trClass}">${nameTd}${priceTd}${cellsTd.join("")}</tr>`;
+    });
+
+    $("tbody").innerHTML = rows.join("") || `
+      <tr>
+        <td class="stickyName"><b>No customers yet</b><div class="addrLine">Tap “Add customer” above.</div></td>
+        <td class="stickyPrice"></td>
+        ${new Array(13).fill("<td></td>").join("")}
+      </tr>
+    `;
+
+    bindTableInteractions(year, customers);
+  }
+
+  function bindTableInteractions(year, customersOrdered){
+    const tbody = $("tbody");
+
+    tbody.onclick = null;
+    tbody.oncontextmenu = null;
+    tbody.ontouchstart = null;
+    tbody.ontouchend = null;
+
+    tbody.addEventListener("click", (e) => {
+      const target = e.target.closest("[data-action]");
+      if(!target) return;
+
+      const action = target.getAttribute("data-action");
+      const id = target.getAttribute("data-id");
+
+      if(action === "editCustomer"){
+        openCustomerModal(id);
+      } else if(action === "editPrice"){
+        openCustomerModal(id, true);
+      } else if(action === "togglePaid"){
+        const cycleIndex = Number(target.getAttribute("data-cycle"));
+        togglePaid(id, year, cycleIndex);
+      } else if(action === "moveUp"){
+        moveCustomer(id, -1, customersOrdered);
+      } else if(action === "moveDown"){
+        moveCustomer(id, +1, customersOrdered);
+      }
+    });
+
+    // Desktop right click for details
+    tbody.addEventListener("contextmenu", (e) => {
+      const target = e.target.closest("[data-action='togglePaid']");
+      if(!target) return;
+      e.preventDefault();
+      const id = target.getAttribute("data-id");
+      const cycleIndex = Number(target.getAttribute("data-cycle"));
+      openCellModal(id, year, cycleIndex);
+    });
+
+    // Mobile long press for details
+    let pressTimer = null;
+    let pressTarget = null;
+
+    tbody.addEventListener("touchstart", (e) => {
+      const t = e.target.closest("[data-action='togglePaid']");
+      if(!t) return;
+      pressTarget = t;
+      pressTimer = setTimeout(() => {
+        const id = pressTarget.getAttribute("data-id");
+        const cycleIndex = Number(pressTarget.getAttribute("data-cycle"));
+        openCellModal(id, year, cycleIndex);
+      }, 550);
+    }, {passive:true});
+
+    tbody.addEventListener("touchend", () => {
+      if(pressTimer) clearTimeout(pressTimer);
+      pressTimer = null;
+      pressTarget = null;
+    }, {passive:true});
+  }
+
+  // Move customer up/down in order within the current round
+  function moveCustomer(customerId, direction, customersOrdered){
+    const idx = customersOrdered.findIndex(c => c.id === customerId);
+    const swapIdx = idx + direction;
+    if(idx < 0 || swapIdx < 0 || swapIdx >= customersOrdered.length) return;
+
+    const a = customersOrdered[idx];
+    const b = customersOrdered[swapIdx];
+
+    const aOrder = a.order ?? idx;
+    const bOrder = b.order ?? swapIdx;
+
+    // swap order values
+    const ai = state.customers.findIndex(x => x.id === a.id);
+    const bi = state.customers.findIndex(x => x.id === b.id);
+    if(ai < 0 || bi < 0) return;
+
+    state.customers[ai].order = bOrder;
+    state.customers[bi].order = aOrder;
+
+    saveState();
     render();
-  </script>
+  }
+
+  // Customer modal
+  function openCustomerModal(customerId, focusPrice=false){
+    editingCustomerId = customerId;
+
+    if(customerId){
+      const c = state.customers.find(x => x.id === customerId);
+      $("custModalTitle").textContent = "Edit customer";
+      $("custName").value = c?.name || "";
+      $("custAddress").value = c?.address || "";
+      $("custPrice").value = (c?.price === "" || c?.price === undefined || c?.price === null) ? "" : Number(c.price);
+      $("custNotes").value = c?.notes || "";
+      $("custDeleteBtn").style.display = "inline-block";
+      $("custSaveBtn").textContent = "Save changes";
+    }else{
+      $("custModalTitle").textContent = "Add customer";
+      $("custName").value = "";
+      $("custAddress").value = "";
+      $("custPrice").value = "";
+      $("custNotes").value = "";
+      $("custDeleteBtn").style.display = "none";
+      $("custSaveBtn").textContent = "Save";
+    }
+
+    $("custModalBg").style.display = "flex";
+    setTimeout(() => {
+      (focusPrice ? $("custPrice") : $("custName")).focus();
+    }, 50);
+  }
+
+  function closeCustomerModal(){
+    $("custModalBg").style.display = "none";
+    editingCustomerId = null;
+  }
+
+  function saveCustomerFromModal(){
+    const round = currentRound();
+    const name = $("custName").value.trim();
+    const address = $("custAddress").value.trim();
+    const notes = $("custNotes").value.trim();
+    const priceRaw = $("custPrice").value;
+
+    if(!name && !address){
+      alert("Please enter at least a name or an address.");
+      return;
+    }
+
+    const price = (priceRaw === "" ? "" : Number(priceRaw));
+    const roundCustomers = state.customers.filter(c => c.round === round).sort((a,b)=> (a.order??0)-(b.order??0));
+    const nextOrder = roundCustomers.length ? ((roundCustomers[roundCustomers.length-1].order ?? (roundCustomers.length-1)) + 1) : 0;
+
+    if(editingCustomerId){
+      const idx = state.customers.findIndex(x => x.id === editingCustomerId);
+      if(idx >= 0){
+        // If round changed, append at end of new round order
+        const oldRound = state.customers[idx].round;
+        state.customers[idx] = { ...state.customers[idx], round, name, address, notes, price };
+        if(oldRound !== round){
+          state.customers[idx].order = nextOrder;
+        }
+      }
+    }else{
+      state.customers.push({ id: uid(), round, name, address, notes, price, order: nextOrder });
+    }
+
+    saveState();
+    closeCustomerModal();
+    render();
+  }
+
+  function deleteCustomerFromModal(){
+    if(!editingCustomerId) return;
+    const c = state.customers.find(x => x.id === editingCustomerId);
+    if(!confirm(`Delete ${c?.name || "this customer"}?`)) return;
+
+    state.customers = state.customers.filter(x => x.id !== editingCustomerId);
+
+    const y = currentYear();
+    for(let i=0;i<13;i++){
+      clearCell(editingCustomerId, y, i);
+    }
+
+    saveState();
+    closeCustomerModal();
+    render();
+  }
+
+  // Toggle paid quickly
+  function togglePaid(customerId, year, cycleIndex){
+    const cell = getCell(customerId, year, cycleIndex);
+    const paid = (cell.paid || "no") === "yes";
+    const nextPaid = paid ? "no" : "yes";
+    const next = {
+      paid: nextPaid,
+      paidDate: nextPaid === "yes" ? (cell.paidDate || todayISO()) : "",
+      method: cell.method || "",
+      note: cell.note || ""
+    };
+    setCell(customerId, year, cycleIndex, next);
+    render();
+  }
+
+  // Cell modal
+  function openCellModal(customerId, year, cycleIndex){
+    editingCell = { customerId, year, cycleIndex };
+
+    const c = state.customers.find(x => x.id === customerId);
+    const dates = cycleDates(year);
+    const cell = getCell(customerId, year, cycleIndex);
+
+    $("cellModalTitle").textContent = "Visit details";
+    $("cellModalMeta").textContent = `${c?.name || "Customer"} • ${c?.round || ""} • Cycle ${cycleIndex+1} • ${dates[cycleIndex]}`;
+    $("cellPaid").value = (cell.paid || "no");
+    $("cellPaidDate").value = cell.paidDate || "";
+    $("cellMethod").value = cell.method || "";
+    $("cellNote").value = cell.note || "";
+
+    $("cellModalBg").style.display = "flex";
+  }
+
+  function closeCellModal(){
+    $("cellModalBg").style.display = "none";
+    editingCell = null;
+  }
+
+  function saveCellFromModal(){
+    if(!editingCell) return;
+    const { customerId, year, cycleIndex } = editingCell;
+
+    const paid = $("cellPaid").value;
+    const paidDate = $("cellPaidDate").value || "";
+    const method = $("cellMethod").value.trim();
+    const note = $("cellNote").value.trim();
+
+    setCell(customerId, year, cycleIndex, { paid, paidDate, method, note });
+    closeCellModal();
+    render();
+  }
+
+  function clearCellFromModal(){
+    if(!editingCell) return;
+    const { customerId, year, cycleIndex } = editingCell;
+    if(!confirm("Clear this cell (paid + note + method + date)?")) return;
+    clearCell(customerId, year, cycleIndex);
+    closeCellModal();
+    render();
+  }
+
+  // Backup / Import
+  function makeBackupPayload(){
+    return {
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      state
+    };
+  }
+
+  function exportBackupDownload(){
+    const payload = makeBackupPayload();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `window-rounds-backup-${todayISO()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function backupToDriveShare(){
+    const payload = makeBackupPayload();
+    const json = JSON.stringify(payload, null, 2);
+    const fileName = `window-rounds-backup-${todayISO()}.json`;
+
+    // Prefer Share Sheet (lets you pick Google Drive if installed)
+    try{
+      const file = new File([json], fileName, {type:"application/json"});
+      if(navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share){
+        await navigator.share({
+          title: "Window Rounds Backup",
+          text: "Save this backup to Google Drive.",
+          files: [file]
+        });
+        return;
+      }
+    }catch(e){
+      // fall back to download
+    }
+
+    // Fallback: download, then upload to Drive manually
+    exportBackupDownload();
+    alert("Backup downloaded. Upload it to Google Drive from your Downloads folder.");
+  }
+
+  async function importBackup(e){
+    const file = e.target.files?.[0];
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const obj = JSON.parse(text);
+      if(!obj || !obj.state) throw new Error("Invalid backup file.");
+      if(!confirm("Import will REPLACE your current data on this phone/browser. Continue?")) return;
+
+      state = obj.state;
+      saveState();
+      init();
+      alert("Imported successfully.");
+    }catch(err){
+      alert("Import failed: " + err.message);
+    }finally{
+      e.target.value = "";
+    }
+  }
+
+  init();
+</script>
 </body>
 </html> 
